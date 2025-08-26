@@ -1,0 +1,11 @@
+environment: development
+port: "8080"
+log_level: info
+
+# Fiji/ImageJ settings
+fiji_path: "/home/joel/Downloads/fiji-stable-linux64-jdk/Fiji.app/ImageJ-linux64"
+temp_dir: "/tmp/gypsum-analysis"
+max_file_size: 52428800  # 50MB in bytes
+
+# Analysis settings
+analysis_timeout: 300  # 5 minutes in seconds

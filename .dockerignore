@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Test files
+*_test.go
+testdata/
+
+# Build artifacts
+gypsum-analysis-api
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go cache
+go.sum

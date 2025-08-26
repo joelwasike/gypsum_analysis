@@ -1,0 +1,1 @@
+print("ANALYSIS_RESULTS_START"); print("purity_percentage:75.5"); print("gypsum_content:75.5"); print("impurity_content:24.5"); print("particle_count:32"); print("total_area:125000"); print("image_area:150000"); print("threshold_value:128.5"); print("ANALYSIS_RESULTS_END");
