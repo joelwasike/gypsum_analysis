@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gypsum Analysis - Upload</title>
+	<style>
+		body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+		.container { background: #fff; padding: 24px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+		h1 { margin: 0 0 16px; }
+		.form { border: 2px dashed #ddd; padding: 24px; text-align: center; border-radius: 10px; }
+		input[type="file"] { margin: 12px 0; }
+		button { background: #007bff; color: #fff; border: 0; padding: 10px 18px; border-radius: 6px; cursor: pointer; }
+		button:disabled { background: #aaa; cursor: not-allowed; }
+		.results { margin-top: 20px; display: none; padding: 16px; border-radius: 6px; }
+		.loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+		.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+		.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>🔬 Gypsum Analysis</h1>
+		<div class="form">
+			<form id="uploadForm" enctype="multipart/form-data">
+				<p>Upload an image (JPG, PNG, TIFF)</p>
+				<input id="imageFile" name="image" type="file" accept=".jpg,.jpeg,.png,.tif,.tiff" required>
+				<div style="margin-top:12px">
+					<button id="submitBtn" type="submit">📊 Analyze</button>
+				</div>
+			</form>
+		</div>
+		<div id="results" class="results"></div>
+	</div>
+
+	<script>
+		const API_BASE_URL = 'http://3.142.73.208:8089';
+
+		document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const fileInput = document.getElementById('imageFile');
+			const submitBtn = document.getElementById('submitBtn');
+			const resultsDiv = document.getElementById('results');
+
+			if (!fileInput.files[0]) {
+				show('Please choose an image file.', 'error');
+				return;
+			}
+
+			submitBtn.disabled = true;
+			submitBtn.textContent = '🔄 Uploading...';
+			show('Uploading image and starting analysis...', 'loading');
+
+			try {
+				const formData = new FormData();
+				// Field name MUST be 'image' to match backend
+				formData.append('image', fileInput.files[0]);
+
+				const uploadRes = await fetch(`${API_BASE_URL}/api/v1/analysis/gypsum`, {
+					method: 'POST',
+					body: formData
+				});
+				if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
+				const uploadJson = await uploadRes.json();
+				const analysisId = uploadJson.analysis_id;
+				show(`Analysis started! ID: ${analysisId}. Waiting for results...`, 'loading');
+
+				// Poll for status
+				let attempts = 0;
+				const maxAttempts = 30;
+				const poll = setInterval(async () => {
+					attempts++;
+					try {
+						const statusRes = await fetch(`${API_BASE_URL}/api/v1/analysis/status/${analysisId}`);
+						if (!statusRes.ok) throw new Error(`Status failed: ${statusRes.status}`);
+						const status = await statusRes.json();
+						if (status.status === 'completed') {
+							clearInterval(poll);
+							show(render(status), 'success');
+							submitBtn.disabled = false;
+							submitBtn.textContent = '📊 Analyze';
+						} else if (status.status === 'failed') {
+							clearInterval(poll);
+							show(`Analysis failed: ${status.error || 'Unknown error'}`, 'error');
+							submitBtn.disabled = false;
+							submitBtn.textContent = '📊 Analyze';
+						} else if (attempts >= maxAttempts) {
+							clearInterval(poll);
+							show('Analysis timed out. Please try again.', 'error');
+							submitBtn.disabled = false;
+							submitBtn.textContent = '📊 Analyze';
+						}
+					} catch (err) {
+						clearInterval(poll);
+						console.error('Status error:', err);
+						show(`Error checking status: ${err.message}`, 'error');
+						submitBtn.disabled = false;
+						submitBtn.textContent = '📊 Analyze';
+					}
+				}, 2000);
+			} catch (err) {
+				console.error('Upload error:', err);
+				show(`Upload failed: ${err.message}<br><br>Please check:<br>1) Server reachable at ${API_BASE_URL}<br>2) Port 8089 open in firewall/Security Group`, 'error');
+				submitBtn.disabled = false;
+				submitBtn.textContent = '📊 Analyze';
+			}
+		});
+
+		function show(message, type) {
+			const el = document.getElementById('results');
+			el.innerHTML = message;
+			el.className = `results ${type}`;
+			el.style.display = 'block';
+		}
+
+		function render(r) {
+			const conf = (r.confidence || 0) * 100;
+			return `
+				<h3>✅ Analysis Complete</h3>
+				<p><strong>Purity:</strong> ${r.purity_percentage ?? '-'}%</p>
+				<p><strong>Confidence:</strong> ${conf ? conf.toFixed(1) : '-'}%</p>
+				<p><strong>Gypsum:</strong> ${r.gypsum_content_percentage ?? r.gypsum_content ?? '-'}%</p>
+				<p><strong>Calcite:</strong> ${r.calcite_content_percentage ?? '-'}%</p>
+				<p><strong>Quartz:</strong> ${r.quartz_content_percentage ?? '-'}%</p>
+				<p><strong>Other Minerals:</strong> ${r.other_minerals_percentage ?? '-'}%</p>
+				<p><strong>Particle Count:</strong> ${r.particle_count ?? '-'}</p>
+				<p><strong>Threshold:</strong> ${r.threshold_value ?? '-'}</p>
+				<p><strong>Image Size:</strong> ${r.image_size ?? '-'} bytes</p>
+			`;
+		}
+	</script>
+</body>
+</html>

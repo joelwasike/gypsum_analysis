@@ -11,6 +11,9 @@ import (
 
 // SetupRoutes configures all API routes
 func SetupRoutes(router *gin.Engine, cfg *config.Config, logger *logger.Logger) {
+	// Configure maximum multipart memory to support large image uploads
+	// Allow configured max file size plus a small overhead buffer
+	router.MaxMultipartMemory = cfg.MaxFileSize + int64(10<<20) // +10MB overhead
 	// Add CORS middleware
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")

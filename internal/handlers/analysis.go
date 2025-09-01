@@ -28,12 +28,16 @@ func NewAnalysisHandler(analysisService services.AnalysisServiceInterface, logge
 
 // AnalyzeGypsum handles gypsum image analysis requests
 func (h *AnalysisHandler) AnalyzeGypsum(c *gin.Context) {
-	// Get the uploaded file
+	// Get the uploaded file from multipart/form-data
 	file, err := c.FormFile("image")
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get uploaded file")
+	if err != nil || file == nil {
+		// Fallback to common alternative field name
+		file, err = c.FormFile("file")
+	}
+	if err != nil || file == nil {
+		h.logger.WithError(err).Error("Failed to get uploaded file from form-data (expected field 'image' or 'file')")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "No image file provided",
+			"error": "No image file provided. Use form-data with field name 'image'",
 		})
 		return
 	}

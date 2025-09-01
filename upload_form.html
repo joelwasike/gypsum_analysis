@@ -113,7 +113,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:8080';
+        const API_BASE_URL = 'http://3.142.73.208:8089';
         
         // Add CORS headers for local development
         const fetchOptions = {
@@ -212,7 +212,8 @@
                 }, 2000);
                 
             } catch (error) {
-                showResults(`Upload failed: ${error.message}`, 'error');
+                console.error('Upload error:', error);
+                showResults(`Upload failed: ${error.message}<br><br>Please check:<br>1. Server is running at ${API_BASE_URL}<br>2. Firewall allows port 8089<br>3. AWS Security Group allows inbound traffic on port 8089`, 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = '📊 Analyze Gypsum';
             }
